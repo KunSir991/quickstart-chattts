@@ -1,0 +1,54 @@
+Service:
+  RegionId: cn-hangzhou
+  DeployType: ros
+  DeployMetadata:
+    ServiceInstanceNameRule:
+      Prefix: chattts
+    SupplierDeployMetadata:
+      ArtifactRelation:
+        'aliyun_3_x64_20G_alibase_20240819.vhd':
+          ArtifactId: ${Artifact.EcsImage.ArtifactId}
+          ArtifactVersion: ${Artifact.EcsImage.ArtifactVersion}
+    TemplateConfigs:
+      - Name: 单机版
+        Url: 'ros_templates/template.yaml'
+  ServiceType: private
+  ServiceInfo:
+    Locale: zh-CN
+    ShortDescription: ChatTTS是专为对话场景设计的语音生成模型，特别适用于大型语言模型(LLM)助手的对话任务，以及诸如对话式音频和视频介绍等应用。它支持中文和英文，通过使用大约100,000小时的中文和英文数据进行训练，ChatTTS在语音合成中表现出高质量和自然度。
+    Image: 'resources/icons/service_logo.png'
+Artifact:
+  EcsImage:
+    ArtifactType: EcsImage
+    ArtifactName: chattts
+    Description: chattts
+    ArtifactProperty:
+      RegionId: ${ImageBuilder.EcsImage.RegionId}
+      ImageId: ${ImageBuilder.EcsImage.SourceImageId}
+ImageBuilder:
+  EcsImage:
+    RegionId: ap-southeast-1
+    SourceImageId: aliyun_3_x64_20G_alibase_20240819.vhd
+    SystemDiskSize: 40
+    InstanceType: ecs.c6.large
+    InternetMaxBandwidthOut: 10
+    CommandType: RunShellScript
+    Timeout: 10800
+    Tags: [ ]
+    CommandContent: |-
+        #!/bin/bash
+
+        # 安装docker-ce
+        yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+        yum makecache
+        yum install -y wget curl unzip git jq
+        yum install -y docker-ce
+        systemctl start docker
+        # 下载chat-tts
+        REPO_URL="https://github.com/jianchang512/ChatTTS-ui.git"
+        CLONE_DIR="/root/chat-tts-ui"
+        mkdir $CLONE_DIR
+        git clone $REPO_URL $CLONE_DIR
+        cd "$CLONE_DIR"
+        # 启动服务
+        docker compose -f docker-compose.cpu.yaml up -d
